@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import {
   Box,
@@ -16,8 +17,10 @@ import {
 const SurveyViewer = () => {
   const [surveyData, setSurveyData] = useState(null);
   const [userResponses, setUserResponses] = useState({});
+  const [userPosition, setUserPosition] = useState(null);
 
   let { surveyId } = useParams();
+
   console.log(surveyId);
 
   useEffect(() => {
@@ -42,6 +45,20 @@ const SurveyViewer = () => {
     fetchSurveyData();
   }, [surveyId]);
 
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserPosition({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        console.error("Error fetching user's position:", error);
+      }
+    );
+  }, []);
+
   const handleResponseChange = (questionIndex, option) => {
     setUserResponses((prevResponses) => {
       const updatedResponses = { ...prevResponses };
@@ -50,19 +67,23 @@ const SurveyViewer = () => {
         updatedResponses[questionIndex] = [];
       }
 
-      if (updatedResponses[questionIndex].includes(option)) {
-        updatedResponses[questionIndex] = updatedResponses[
-          questionIndex
-        ].filter((response) => response !== option);
+      if (surveyData.questions[questionIndex].type === "SINGLE_CHOICE") {
+        updatedResponses[questionIndex] = [option];
       } else {
-        updatedResponses[questionIndex].push(option);
+        if (updatedResponses[questionIndex].includes(option)) {
+          updatedResponses[questionIndex] = updatedResponses[
+            questionIndex
+          ].filter((response) => response !== option);
+        } else {
+          updatedResponses[questionIndex].push(option);
+        }
       }
 
       return updatedResponses;
     });
   };
 
-  const handleOpenEndedChange = (questionIndex, value) => {
+  const handleInputResponseChange = (questionIndex, value) => {
     setUserResponses((prevResponses) => ({
       ...prevResponses,
       [questionIndex]: value,
@@ -90,17 +111,21 @@ const SurveyViewer = () => {
       console.log("User Survey Responses:", userSurveyResponses);
 
       const response = await axios.post(
-        `${import.meta.env.VITE_PUBLIC_DATA}/save/${surveyId}`,
-        { responses: userSurveyResponses }
+        `${import.meta.env.VITE_PUBLIC_DATA}/submit/${surveyId}`,
+        {
+          surveyId: surveyId,
+          responses: userSurveyResponses,
+          location: userPosition,
+        }
       );
 
       if (response.status === 200) {
-        console.log("Respuestas guardadas exitosamente!");
+        toast.success("Respuestas enviadas con éxito");
       } else {
         console.error("Error al guardar las respuestas:", response.statusText);
       }
     } catch (error) {
-      console.error("An error occurred:", error);
+      toast.error("An error occurred:", error);
     }
   };
 
@@ -117,7 +142,7 @@ const SurveyViewer = () => {
       mt={8}
     >
       <Box p={4}>
-        <Heading textTransform={"capitalize"}>{surveyData.name}</Heading>
+        <Heading>{surveyData.name}</Heading>
         <Text>{surveyData.description}</Text>
         {surveyData.questions.map((question, questionIndex) => (
           <Box key={questionIndex} mt={4}>
@@ -130,7 +155,7 @@ const SurveyViewer = () => {
                 type="text"
                 value={userResponses[questionIndex] || ""}
                 onChange={(e) =>
-                  handleOpenEndedChange(questionIndex, e.target.value)
+                  handleInputResponseChange(questionIndex, e.target.value)
                 }
                 mt={2}
               />
@@ -159,6 +184,7 @@ const SurveyViewer = () => {
           Guardar Respuestas
         </Button>
       </Box>
+      <Toaster />
     </Flex>
   );
 };
