@@ -12,7 +12,20 @@ import {
   Flex,
   Button,
   Checkbox,
+  createIcon,
 } from "@chakra-ui/react";
+
+const Pi = 3.141592653;
+
+const SendIcon = createIcon({
+  displayName: "SendIcon",
+  viewBox: "0 0 24 24",
+  d: "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z",
+});
+
+function capitalizeFirstLetter(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 const SurveyViewer = () => {
   const [surveyData, setSurveyData] = useState(null);
@@ -139,50 +152,67 @@ const SurveyViewer = () => {
       w={"full"}
       justify={"center"}
       minH={"max-content"}
-      mt={8}
+      bg='gray.100'
+      mt='auto'
+      border='30px'
+      borderColor='black.900'
     >
-      <Box p={4}>
-        <Heading>{surveyData.name}</Heading>
-        <Text>{surveyData.description}</Text>
+      
+      <Box p={4} h='fit-content' style={{display:'flex',flexDirection:'column',gap:{Pi}}}>
+        <Heading mt={Pi+9}>{surveyData.name}</Heading>
+        <Text>{capitalizeFirstLetter(surveyData.description)}</Text>
         {surveyData.questions.map((question, questionIndex) => (
           <Box key={questionIndex} mt={4}>
             <Heading as="h2" size="md">
-              Pregunta {questionIndex + 1}: {question.question}
+              {questionIndex + 1}. {capitalizeFirstLetter(question.question)}
             </Heading>
-            <Text>Tipo de Pregunta: {question.type}</Text>
+            {/*<Text>Tipo de Pregunta: {question.type}</Text>*/}
+            {question.type === "MULTIPLE_CHOICE" && (
+              <Text fontStyle="italic" fontSize="sm">
+                Seleccione una o más opciones
+              </Text>
+            )}
             {question.type === "OPEN_ENDED" ? (
               <Input
+                mt={Pi}
                 type="text"
+                placeholder="Escribe tu respuesta aquí..."
                 value={userResponses[questionIndex] || ""}
                 onChange={(e) =>
                   handleInputResponseChange(questionIndex, e.target.value)
                 }
-                mt={2}
               />
             ) : (
-              <List>
+              <List style={{display: 'flex', flexDirection:'row', flexWrap:'wrap',gap:'40px'}}>
                 {question.options.map((option, optionIndex) => (
-                  <ListItem key={optionIndex}>
-                    <Checkbox
+                  <ListItem key={optionIndex} mt={2}>
+                    <Button
+                      mt={Pi}
                       value={option}
-                      isChecked={
-                        userResponses[questionIndex]?.includes(option) || false
-                      }
-                      onChange={() =>
+                      variant = {userResponses[questionIndex]?.includes(option) ? 'solid' : 'outline'}
+                      colorScheme={userResponses[questionIndex]?.includes(option) ? 'blue' : 'gray'}
+                      onClick={() =>
                         handleResponseChange(questionIndex, option)
                       }
                     >
-                      {option}
-                    </Checkbox>
+                      {capitalizeFirstLetter(option)}
+                    </Button>
                   </ListItem>
                 ))}
               </List>
             )}
           </Box>
         ))}
-        <Button mt={4} colorScheme="blue" onClick={handleSaveResponses}>
-          Guardar Respuestas
-        </Button>
+        <Box textAlign="center">
+          <Button
+            rightIcon={<SendIcon />}
+            mt={6}
+            colorScheme="blue"
+            onClick={handleSaveResponses}
+          >
+            Enviar
+          </Button>
+        </Box>
       </Box>
       <Toaster />
     </Flex>

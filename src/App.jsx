@@ -5,7 +5,7 @@ import "./App.css";
 
 function App() {
   return (
-    <Container maxW={"100%"} h={"100vh"}>
+    <Container maxW={"100%"} h={"100vh"} background='gray.200'>
       <Routes>
         <Route path="/survey/:surveyId" element={<SurveyViewer />} />
       </Routes>
